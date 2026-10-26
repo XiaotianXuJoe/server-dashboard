@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>服务器运行看板 · 175.178.16.78</title>
+<style>
+  :root{--bg:#f4f6fa;--card:#fff;--border:#e4e8ef;--text:#1f2937;--muted:#6b7280;
+  --green:#16a34a;--gbg:#ecfdf3;--red:#dc2626;--rbg:#fef2f2;--amber:#d97706;--abg:#fffbeb;
+  --blue:#2563eb;--bbg:#eff6ff;--purple:#7c3aed;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);padding:24px}
+  .wrap{max-width:1200px;margin:0 auto}
+  .header{background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:14px;padding:22px 26px;color:#fff;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+  .header h1{font-size:20px;font-weight:700}
+  .header .sub{font-size:13px;opacity:.85;margin-top:6px}
+  .header .right{text-align:right;font-size:13px;opacity:.92;line-height:1.8}
+  .live{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:3px 12px;font-size:12px}
+  .live .dot{width:7px;height:7px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .sys{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:16px}
+  .sc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+  .sc .label{font-size:12px;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between}
+  .sc .value{font-size:22px;font-weight:700}
+  .sc .detail{font-size:12px;color:var(--muted);margin-top:4px}
+  .bar{height:6px;background:#eef1f6;border-radius:3px;margin-top:10px;overflow:hidden}
+  .bar>div{height:100%;border-radius:3px;transition:width .5s}
+  .st{font-size:16px;font-weight:700;margin:22px 0 12px;display:flex;align-items:center;gap:10px}
+  .st .cnt{font-size:12px;font-weight:500;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+  .proj{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+  .proj::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+  .proj.up::before{background:var(--green)}.proj.down::before{background:var(--red)}
+  .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .ph h3{font-size:15px;font-weight:700}
+  .status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px}
+  .status .dot{width:7px;height:7px;border-radius:50%}
+  .status.on{background:var(--gbg);color:var(--green)}
+  .status.on .dot{background:var(--green);animation:pulse 2s infinite}
+  .status.off{background:var(--rbg);color:var(--red)}
+  .status.off .dot{background:var(--red)}
+  .desc{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;color:#fff}
+  .tag.pm2{background:var(--purple)}.tag.docker{background:var(--blue)}
+  .tag.nginx{background:#0f766e}.tag.proc{background:#64748b}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:12.5px}
+  .kv .k{color:var(--muted)}.kv .v{font-weight:600;text-align:right}
+  .kv .v.mono{font-family:Consolas,monospace}
+  .note{margin-top:10px;font-size:12px;padding:7px 10px;border-radius:7px;line-height:1.5}
+  .note.warn{background:var(--abg);color:#92400e}
+  .note.info{background:var(--bbg);color:#1e40af}
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;font-size:13px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+  th{background:#f8fafc;font-size:12px;color:var(--muted);font-weight:600}
+  tr:last-child td{border-bottom:none}
+  .pill{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;color:#fff}
+  .pill.on{background:var(--green)}.pill.off{background:var(--red)}
+  footer{margin-top:24px;text-align:center;font-size:12px;color:var(--muted);line-height:1.8}
+  .err{background:var(--rbg);color:#991b1b;padding:14px;border-radius:10px;font-size:13px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1>🖥️ 服务器项目运行看板</h1>
+      <div class="sub" id="hostInfo">175.178.16.78 · 加载中…</div>
+    </div>
+    <div class="right">
+      <span class="live"><span class="dot"></span>实时自动刷新 · <span id="cd">30</span>s</span><br>
+      数据更新：<span id="upd">--</span><br>
+      运行时间：<span id="up">--</span>
+    </div>
+  </div>
+
+  <div class="sys" id="sys"></div>
+  <div id="err"></div>
+
+  <div class="st">📦 项目运行状态 <span class="cnt" id="pcnt"></span></div>
+  <div class="grid" id="projects"></div>
+
+  <div class="st">🐳 Docker 容器</div>
+  <table id="ctable"><thead><tr><th>容器</th><th>镜像</th><th>状态</th><th>内存</th><th>CPU</th><th>端口</th></tr></thead><tbody></tbody></table>
+
+  <footer>
+    数据来源：服务器本地采集脚本（PM2 / Docker / 进程 / HTTP 探活），每分钟更新一次<br>
+    页面每 30 秒自动拉取最新数据 · 采集脚本：/home/ubuntu/monitor/server_status.py
+  </footer>
+</div>
+
+<script>
+let tick = 30;
+function fmtMB(mb){ return mb>=1024 ? (mb/1024).toFixed(1)+' GB' : mb+' MB'; }
+function barColor(p){ return p>=85?'var(--red)':p>=60?'var(--amber)':'var(--green)'; }
+
+function render(d){
+  const s = d.system;
+  document.getElementById('hostInfo').textContent = `175.178.16.78（${s.host}）· ${s.os}`;
+  document.getElementById('upd').textContent = d.time;
+  document.getElementById('up').textContent = s.uptime_text;
+
+  const mem = s.mem||{}, sw = s.swap||{}, dk = s.disk||{};
+  const mp = mem.total ? Math.round(mem.used/mem.total*100) : 0;
+  const sp = sw.total ? Math.round(sw.used/sw.total*100) : 0;
+  const cards = [
+    ['系统负载 (load avg)', s.load[0].toFixed(2), `5分钟 ${s.load[1].toFixed(2)} / 15分钟 ${s.load[2].toFixed(2)}`, Math.min(s.load[0]*10,100), 'var(--green)'],
+    ['内存使用', fmtMB(mem.used)+` <span style="font-size:13px;color:#6b7280">/ ${fmtMB(mem.total)}</span>`, `可用 ${fmtMB(mem.free)}`, mp, barColor(mp)],
+    ['Swap 使用'+(sp>40?' ⚠':''), fmtMB(sw.used)+` <span style="font-size:13px;color:#6b7280">/ ${fmtMB(sw.total)}</span>`, sp>40?'换页较多，注意内存压力':'正常', sp, barColor(sp)],
+    ['磁盘 /dev/vda2', fmtMB(dk.used_mb)+` <span style="font-size:13px;color:#6b7280">/ ${fmtMB(dk.total_mb)}</span>`, `剩余 ${fmtMB(dk.free_mb)}`, dk.pct, barColor(dk.pct)],
+  ];
+  document.getElementById('sys').innerHTML = cards.map(c=>`
+    <div class="sc"><div class="label"><span>${c[0]}</span></div>
+    <div class="value">${c[1]}</div><div class="detail">${c[2]}</div>
+    <div class="bar"><div style="width:${c[3]}%;background:${c[4]}"></div></div></div>`).join('');
+
+  const up = d.projects.filter(p=>p.status==='up').length;
+  document.getElementById('pcnt').textContent = `${up} 个在线 / ${d.projects.length-up} 个异常`;
+  const tagName = {pm2:'PM2',docker:'DOCKER',nginx:'NGINX',proc:'裸进程'};
+  document.getElementById('projects').innerHTML = d.projects.map(p=>{
+    const ok = p.status==='up';
+    let note='';
+    if(p.svc_state==='loop') note = `<div class="note warn">🔁 systemd 服务处于<b>崩溃重启循环</b>（${p.supervisor}）——通常是旧进程仍占用 ${p.port} 端口导致新实例 EADDRINUSE</div>`;
+    else if(p.svc_state==='bad') note = `<div class="note warn">⚠️ systemd 服务状态异常：${p.supervisor}</div>`;
+    else if(p.svc_state==='none') note = `<div class="note warn">⚠️ 未被 PM2 / systemd 托管，进程退出后不会自动恢复</div>`;
+    else if(p.restart_level==='warn') note = `<div class="note warn">${p.restart_note}</div>`;
+    else if(p.restart_level==='info') note = `<div class="note info">📌 ${p.restart_note}</div>`;
+    else if(p.kind==='docker') note = `<div class="note info">📌 Docker 容器：${p.uptime}</div>`;
+    const svcRow = p.supervisor?`<span class="k">守护方式</span><span class="v" style="color:${p.svc_state==='ok'?'var(--green)':'var(--amber)'}">${p.supervisor}</span>`:'';
+    return `<div class="proj ${ok?'up':'down'}">
+      <div class="ph"><h3>${p.name}</h3>
+        <span class="status ${ok?'on':'off'}"><span class="dot"></span>${ok?'运行中':'异常'}</span></div>
+      <div class="desc">${p.desc||''}</div>
+      <span class="tag ${p.kind}">${tagName[p.kind]}</span>
+      <div style="height:10px"></div>
+      <div class="kv">
+        <span class="k">端口</span><span class="v mono">${p.port}</span>
+        <span class="k">HTTP 探活</span><span class="v" style="color:${ok?'var(--green)':'var(--red)'}">${p.http||'无响应'}${p.rt_ms>0?' · '+p.rt_ms+'ms':''}</span>
+        <span class="k">内存</span><span class="v">${p.mem}</span>
+        <span class="k">运行时长</span><span class="v">${p.uptime||'-'}</span>
+        ${p.restarts!=null?`<span class="k">累计重启</span><span class="v" style="color:${p.restarts>50?'var(--amber)':'inherit'}">${p.restarts} 次</span>`:''}
+        ${svcRow}
+        ${p.pid?`<span class="k">PID</span><span class="v mono">${p.pid}</span>`:''}
+      </div>${note}</div>`;
+  }).join('');
+
+  document.querySelector('#ctable tbody').innerHTML = (d.containers||[]).map(c=>`
+    <tr><td><b>${c.name}</b></td><td style="color:#6b7280">${c.image}</td>
+    <td><span class="pill ${c.running?'on':'off'}">${c.status}</span></td>
+    <td>${c.mem}</td><td>${c.cpu}</td><td style="font-size:11px;color:#6b7280">${c.ports||'-'}</td></tr>`).join('');
+}
+
+async function load(){
+  try{
+    const r = await fetch('status.json?t='+Date.now());
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    document.getElementById('err').innerHTML='';
+    render(d);
+  }catch(e){
+    document.getElementById('err').innerHTML = `<div class="err">⚠️ 数据获取失败：${e.message}（可能采集任务未运行）</div>`;
+  }
+}
+setInterval(()=>{ tick--; if(tick<=0){ tick=30; load(); } document.getElementById('cd').textContent=tick; }, 1000);
+load();
+</script>
+</body>
+</html>
